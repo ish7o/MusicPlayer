@@ -1,0 +1,6 @@
+- [ ] Song selection/search UI
+- [ ] Remove song hardcode
+- [ ] Next track when song finished
+- [ ] Queue
+- [ ] Album cover from metadata
+- [ ] Song upload

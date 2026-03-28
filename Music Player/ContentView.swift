@@ -1,24 +1,9 @@
-//
-//  ContentView.swift
-//  Music Player
-//
-//  Created by Julian Orłowski on 28/03/2026.
-//
-
 import SwiftUI
 
 struct ContentView: View {
-    var body: some View {
-        VStack {
-            Image(systemName: "globe")
-                .imageScale(.large)
-                .foregroundStyle(.tint)
-            Text("Hello, world!")
-        }
-        .padding()
-    }
-}
+    @StateObject var player = PlayerManager()
 
-#Preview {
-    ContentView()
+    var body: some View {
+        PlayerView().environmentObject(player)
+    }
 }
