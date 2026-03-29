@@ -1,7 +1,7 @@
 import AVFoundation
 import Combine
 
-class PlayerManager: ObservableObject {
+class PlayerManager: NSObject, ObservableObject, AVAudioPlayerDelegate {
     @Published var currentIndex: Int = 0
     @Published var isPlaying: Bool = false
     @Published var progress: Double = 0
@@ -16,11 +16,22 @@ class PlayerManager: ObservableObject {
     private var timer: Timer?
 
     var currentSong: Song { songs[currentIndex] }
-
-    func play(index: Int) {
+    
+    func load(_ index: Int) {
         currentIndex = index
         guard let url = Bundle.main.url(forResource: songs[index].filename, withExtension: nil) else { return }
         player = try? AVAudioPlayer(contentsOf: url)
+        player?.delegate = self
+        player?.prepareToPlay()
+    }
+    
+    override init() {
+        super.init()
+        load(0)
+    }
+    
+    func play(index: Int) {
+        load(index)
         player?.play()
         isPlaying = true
         startTimer()
@@ -52,5 +63,9 @@ class PlayerManager: ObservableObject {
             guard let self, let player = self.player else { return }
             self.progress = player.currentTime / player.duration
         }
+    }
+    
+    func audioPlayerDidFinishPlaying(_ player: AVAudioPlayer, successfully flag: Bool) {
+        self.next()
     }
 }
