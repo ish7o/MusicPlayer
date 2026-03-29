@@ -16,11 +16,14 @@ struct PlayerView: View {
                 Text(player.currentSong.artist).foregroundStyle(.secondary)
             }
 
-            Slider(value: Binding(
-                get: { player.progress },
-                set: { player.seek(to: $0) }
-            ))
-            .padding(.horizontal)
+            HStack {
+                Text(player.currentTime)
+                Slider(value: Binding(
+                    get: { player.progress },
+                    set: { player.seek(to: $0) }
+                ))
+                Text(player.duration)
+            }
 
             HStack(spacing: 40) {
                 Button { player.previous() } label: {

@@ -4,6 +4,6 @@ struct ContentView: View {
     @StateObject var player = PlayerManager()
 
     var body: some View {
-        PlayerView().environmentObject(player)
+        LibraryView().environmentObject(player)
     }
 }
