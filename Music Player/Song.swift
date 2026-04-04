@@ -1,9 +1,9 @@
 import Foundation
 
-struct Song: Identifiable {
-    let id = UUID()
+struct Song: Identifiable, Codable {
+    let id: UUID
     let title: String
     let artist: String
-    let filename: String
+    let url: URL
 }
 

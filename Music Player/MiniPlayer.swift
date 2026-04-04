@@ -11,11 +11,11 @@ struct MiniPlayer : View {
                 .frame(width: 40, height: 40)
                 .overlay(Image(systemName: "music.note").foregroundStyle(.white))
             VStack(alignment: .leading, spacing: 4) {
-                Text(player.currentSong.title)
+                Text(player.currentSong?.title ?? "")
                     .font(.subheadline)
                     .fontWeight(.medium)
                     .lineLimit(1)
-                Text(player.currentSong.artist)
+                Text(player.currentSong?.artist ?? "")
                     .font(.caption)
                     .foregroundColor(.secondary)
                     .lineLimit(1)

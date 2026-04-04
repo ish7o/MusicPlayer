@@ -12,8 +12,8 @@ struct PlayerView: View {
                 .overlay(Image(systemName: "music.note").font(.system(size: 80)).foregroundStyle(.white))
 
             VStack {
-                Text(player.currentSong.title).font(.title2).bold()
-                Text(player.currentSong.artist).foregroundStyle(.secondary)
+                Text(player.currentSong?.title ?? "").font(.title2).bold()
+                Text(player.currentSong?.artist ?? "").foregroundStyle(.secondary)
             }
 
             HStack {

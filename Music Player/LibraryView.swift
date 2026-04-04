@@ -39,6 +39,11 @@ struct LibraryView: View {
                     .buttonStyle(.plain)
                 }
                 .navigationTitle("Library")
+                .toolbar {
+                    Button { player.scanDocuments() } label: {
+                        Image(systemName: "arrow.clockwise")
+                    }
+                }
             }
             .safeAreaInset(edge: .bottom) { Color.clear.frame(height: 72) }
             MiniPlayer(showPlayer: $showPlayer).environmentObject(player)

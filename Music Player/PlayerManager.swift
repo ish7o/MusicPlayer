@@ -8,16 +8,25 @@ class PlayerManager: NSObject, ObservableObject, AVAudioPlayerDelegate {
     @Published var currentTime: String = "0:00"
     @Published var duration: String = "0:00"
 
-    let songs: [Song] = [
-        Song(title: "Fake your death", artist: "My Chemical Romance", filename: "01 Fake Your Death.mp3"),
-        Song(title: "Witch", artist: "My Chemical Romance", filename: "02 Witch.mp3"),
-        Song(title: "Bike Thief", artist: "My Chemical Romance", filename: "03 Bike Thief.mp3"),
-    ]
+    @Published var songs: [Song] = [] {
+        didSet { saveLibrary() }
+    }
 
     private var player: AVAudioPlayer?
     private var timer: Timer?
+    private var libraryURL: URL {
+        get throws {
+            let appSupport = try FileManager.default.url(
+                for: .applicationSupportDirectory,
+                in: .userDomainMask,
+                appropriateFor: nil,
+                create: true
+            )
+            return appSupport.appendingPathComponent("library.json")
+        }
+    }
 
-    var currentSong: Song { songs[currentIndex] }
+    var currentSong: Song? { songs.isEmpty ? nil : songs[currentIndex] }
     
     private func formatTime(_ seconds: Double) -> String {
         guard !seconds.isNaN else { return "0:00" }
@@ -27,9 +36,9 @@ class PlayerManager: NSObject, ObservableObject, AVAudioPlayerDelegate {
     }
     
     func load(_ index: Int) {
+        guard index < songs.count else { return }
         currentIndex = index
-        guard let url = Bundle.main.url(forResource: songs[index].filename, withExtension: nil) else { return }
-        player = try? AVAudioPlayer(contentsOf: url)
+        player = try? AVAudioPlayer(contentsOf: songs[index].url)
         duration = formatTime(player?.duration ?? 0)
         currentTime = "0:00"
         player?.delegate = self
@@ -37,9 +46,45 @@ class PlayerManager: NSObject, ObservableObject, AVAudioPlayerDelegate {
         startTimer()
     }
     
+    func scanDocuments() {
+        do {
+            let docs = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+            print("Searching in: \(docs.path)")
+            let files = try FileManager.default.contentsOfDirectory(at: docs, includingPropertiesForKeys: nil)
+            print("Found files: \(files)")
+            let audioFiles = files.filter {url in ["mp3", "m4a", "wav", "flac", "ogg"].contains(url.pathExtension) && !songs.contains {$0.url == url}}
+            let newSongs = audioFiles.map { url in Song(id: UUID(), title: url.deletingPathExtension().lastPathComponent, artist: "Unknown Artist", url: url)}
+            songs.append(contentsOf: newSongs)
+            
+        } catch {
+            print("Error scanning Documents: \(error)")
+        }
+    }
+    
+    func saveLibrary() {
+        do {
+            let data = try JSONEncoder().encode(songs)
+            try data.write(to: libraryURL)
+        } catch {
+            print("Error saving library: \(error)")
+        }
+    }
+    
+    func loadLibrary() {
+        do {
+            let data = try Data(contentsOf: libraryURL)
+            songs = try JSONDecoder().decode([Song].self, from: data)
+        } catch {
+            songs = []
+            print("Error loading library: \(error)")
+        }
+    }
+    
     override init() {
         super.init()
-        load(0)
+        print(FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0].path)
+        loadLibrary()
+        scanDocuments()
     }
     
     func play(_ index: Int) {
@@ -55,10 +100,12 @@ class PlayerManager: NSObject, ObservableObject, AVAudioPlayerDelegate {
     }
 
     func next() {
+        guard !songs.isEmpty else { return }
         play((currentIndex + 1) % songs.count)
     }
 
     func previous() {
+        guard !songs.isEmpty else { return }
         play((currentIndex - 1 + songs.count) % songs.count)
     }
 
