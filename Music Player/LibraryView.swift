@@ -40,7 +40,7 @@ struct LibraryView: View {
                 }
                 .navigationTitle("Library")
                 .toolbar {
-                    Button { player.scanDocuments() } label: {
+                    Button { Task { await player.scanDocuments() } } label: {
                         Image(systemName: "arrow.clockwise")
                     }
                 }

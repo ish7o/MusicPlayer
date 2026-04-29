@@ -46,19 +46,56 @@ class PlayerManager: NSObject, ObservableObject, AVAudioPlayerDelegate {
         startTimer()
     }
     
-    func scanDocuments() {
+    @MainActor
+    func scanDocuments() async {
         do {
             let docs = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
-            print("Searching in: \(docs.path)")
             let files = try FileManager.default.contentsOfDirectory(at: docs, includingPropertiesForKeys: nil)
-            print("Found files: \(files)")
-            let audioFiles = files.filter {url in ["mp3", "m4a", "wav", "flac", "ogg"].contains(url.pathExtension) && !songs.contains {$0.url == url}}
-            let newSongs = audioFiles.map { url in Song(id: UUID(), title: url.deletingPathExtension().lastPathComponent, artist: "Unknown Artist", url: url)}
-            songs.append(contentsOf: newSongs)
+            let onDiskFilenames = Set(files.map { $0.lastPathComponent })
             
+            songs = songs.filter { song in
+                let exists = onDiskFilenames.contains(song.filename)
+                if !exists && currentIndex >= songs.count { currentIndex = 0 }
+                return exists
+            }
+            
+            let existingFilenames = Set(songs.map { $0.filename })
+            let newAudioFiles = files.filter { url in
+                ["mp3", "m4a", "wav", "flac", "ogg"].contains(url.pathExtension) &&
+                !existingFilenames.contains(url.lastPathComponent)
+            }
+            
+            var newSongs: [Song] = []
+            for url in newAudioFiles {
+                let metadata = await loadMetadata(url)
+                newSongs.append(Song(id: UUID(), title: metadata.title, artist: metadata.artist, filename: url.lastPathComponent))
+            }
+            
+            songs.append(contentsOf: newSongs)
         } catch {
             print("Error scanning Documents: \(error)")
         }
+    }
+    
+    func loadMetadata(_ url: URL) async -> (title: String, artist: String) {
+        let asset = AVURLAsset(url: url)
+        let metadata = try? await asset.load(.commonMetadata)
+        
+        var title = url.deletingPathExtension().lastPathComponent
+        var artist = "Unknown Artist"
+    
+        for item in metadata ?? [] {
+            if item.commonKey == .commonKeyTitle,
+               let value = try? await item.load(.stringValue) {
+                title = value
+            }
+            if item.commonKey == .commonKeyArtist,
+               let value = try? await item.load(.stringValue) {
+                artist = value
+            }
+        }
+        
+        return (title, artist)
     }
     
     func saveLibrary() {
@@ -84,7 +121,7 @@ class PlayerManager: NSObject, ObservableObject, AVAudioPlayerDelegate {
         super.init()
         print(FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0].path)
         loadLibrary()
-        scanDocuments()
+        Task { await scanDocuments() }
     }
     
     func play(_ index: Int) {
