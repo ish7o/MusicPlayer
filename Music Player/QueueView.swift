@@ -7,7 +7,7 @@ struct QueueView: View {
     var body: some View {
         NavigationStack {
             List {
-                if player.queue.isEmpty {
+                if player.queue.isEmpty && !player.repeatQueue {
                     ContentUnavailableView(
                         "Queue is empty",
                         systemImage: "text.line.first.and.arrowtriangle.forward",
@@ -33,7 +33,15 @@ struct QueueView: View {
                     EditButton()
                 }
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button("Clear") { player.queue.removeAll() }
+                    HStack(spacing: 4) {
+                        Button {
+                            player.toggleQueueRepeat()
+                        } label: {
+                            Image(systemName: player.repeatQueue ? "repeat" : "repeat")
+                                .foregroundStyle(player.repeatQueue ? .accentColor : .gray)
+                        }
+                        Button("Clear") { player.queue.removeAll() }
+                    }
                 }
             }
         }

@@ -13,6 +13,8 @@ class PlayerManager: NSObject, ObservableObject, AVAudioPlayerDelegate {
         didSet { saveLibrary() }
     }
     @Published var queue: [Song] = []
+    @Published var repeatQueue = false
+    private var queueSpent: [Song] = []
 
     private var player: AVAudioPlayer?
     private var timer: Timer?
@@ -183,10 +185,20 @@ class PlayerManager: NSObject, ObservableObject, AVAudioPlayerDelegate {
     func next() {
         if !queue.isEmpty {
             let nextSong = queue.removeFirst()
+            if repeatQueue { queueSpent.append(nextSong) }
             if let index = songs.firstIndex(where: { $0.id == nextSong.id }) {
                 play(index)
+                return
             }
-        } else if !songs.isEmpty {
+        }
+        if repeatQueue && !queueSpent.isEmpty {
+            queue = queueSpent
+            queueSpent = []
+            next()
+            return
+        }
+        if !songs.isEmpty {
+            queueSpent = []
             play((currentIndex + 1) % songs.count)
         }
     }
@@ -194,9 +206,25 @@ class PlayerManager: NSObject, ObservableObject, AVAudioPlayerDelegate {
     func addToQueue(_ song: Song) {
         queue.append(song)
     }
+    
+    func toggleQueueRepeat() {
+        repeatQueue.toggle()
+        if !repeatQueue { queueSpent = [] }
+    }
 
     func previous() {
         guard !songs.isEmpty else { return }
+        
+        if !queueSpent.isEmpty {
+            let lastSpent = queueSpent.removeLast()
+            if let index = songs.firstIndex(where: { $0.id == lastSpent.id }) {
+                let current = songs[currentIndex]
+                queue.insert(current, at: 0)
+                play(index)
+                return
+            }
+        }
+        
         play((currentIndex - 1 + songs.count) % songs.count)
     }
 
