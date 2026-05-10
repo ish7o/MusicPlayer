@@ -6,10 +6,8 @@ struct MiniPlayer : View {
     
     var body: some View {
         HStack(spacing: 12) {
-            RoundedRectangle(cornerRadius: 8)
-                .fill(Color.black.gradient)
-                .frame(width: 40, height: 40)
-                .overlay(Image(systemName: "music.note").foregroundStyle(.white))
+            AlbumArt(coverData: player.coverArtData,
+                     size: CGSize(width: 40, height: 40))
             VStack(alignment: .leading, spacing: 4) {
                 Text(player.currentSong?.title ?? "")
                     .font(.subheadline)

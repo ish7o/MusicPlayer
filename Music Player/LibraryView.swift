@@ -14,11 +14,8 @@ struct LibraryView: View {
                         showPlayer = true
                     } label: {
                         HStack(spacing: 12) {
-                            RoundedRectangle(cornerRadius: 8)
-                                .fill(Color.black.gradient)
-                                .frame(width: 40, height: 40)
-                                .overlay(Image(systemName: "music.note")
-                                    .foregroundStyle(.white))
+                            AlbumArt(coverData: song.coverArt,
+                                     size: CGSize(width: 40, height: 40))
                             VStack(alignment: .leading, spacing: 2) {
                                 Text(song.title)
                                     .font(.body)

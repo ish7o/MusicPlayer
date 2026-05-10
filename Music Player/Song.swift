@@ -5,6 +5,7 @@ struct Song: Identifiable {
     let title: String
     let artist: String
     let filename: String
+    let coverArt: Data?
     
     var url: URL {
         FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
@@ -14,7 +15,7 @@ struct Song: Identifiable {
 
 extension Song: Codable {
     enum CodingKeys: String, CodingKey {
-        case id, title, artist, filename, url
+        case id, title, artist, filename, url, coverArt
     }
     
     init(from decoder: Decoder) throws {
@@ -22,12 +23,13 @@ extension Song: Codable {
         id = try container.decode(UUID.self, forKey: .id)
         title = try container.decode(String.self, forKey: .title)
         artist = try container.decode(String.self, forKey: .artist)
+        coverArt = try container.decodeIfPresent(Data.self, forKey: .coverArt)
         
         if let filename = try container.decodeIfPresent(String.self, forKey: .filename) {
             self.filename = filename
         } else {
             let oldUrl = try container.decode(URL.self, forKey: .url)
-            filename = oldUrl.lastPathComponent
+            self.filename = oldUrl.lastPathComponent
         }
     }
     
@@ -37,5 +39,6 @@ extension Song: Codable {
         try container.encode(title, forKey: .title)
         try container.encode(artist, forKey: .artist)
         try container.encode(filename, forKey: .filename)
+        try container.encodeIfPresent(coverArt, forKey: .coverArt)
     }
 }

@@ -5,11 +5,8 @@ struct PlayerView: View {
 
     var body: some View {
         VStack(spacing: 24) {
-            // placeholder
-            RoundedRectangle(cornerRadius: 20)
-                .fill(Color.black.gradient)
-                .frame(width: 250, height: 250)
-                .overlay(Image(systemName: "music.note").font(.system(size: 80)).foregroundStyle(.white))
+            AlbumArt(coverData: player.coverArtData,
+                     size: CGSize(width: 250, height: 250))
 
             VStack {
                 Text(player.currentSong?.title ?? "").font(.title2).bold()

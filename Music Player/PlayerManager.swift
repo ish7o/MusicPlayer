@@ -7,6 +7,7 @@ class PlayerManager: NSObject, ObservableObject, AVAudioPlayerDelegate {
     @Published var progress: Double = 0
     @Published var currentTime: String = "0:00"
     @Published var duration: String = "0:00"
+    @Published var coverArtData: Data?
 
     @Published var songs: [Song] = [] {
         didSet { saveLibrary() }
@@ -38,6 +39,7 @@ class PlayerManager: NSObject, ObservableObject, AVAudioPlayerDelegate {
     func load(_ index: Int) {
         guard index < songs.count else { return }
         currentIndex = index
+        coverArtData = songs[index].coverArt
         player = try? AVAudioPlayer(contentsOf: songs[index].url)
         duration = formatTime(player?.duration ?? 0)
         currentTime = "0:00"
@@ -68,7 +70,7 @@ class PlayerManager: NSObject, ObservableObject, AVAudioPlayerDelegate {
             var newSongs: [Song] = []
             for url in newAudioFiles {
                 let metadata = await loadMetadata(url)
-                newSongs.append(Song(id: UUID(), title: metadata.title, artist: metadata.artist, filename: url.lastPathComponent))
+                newSongs.append(Song(id: UUID(), title: metadata.title, artist: metadata.artist, filename: url.lastPathComponent, coverArt: metadata.coverArt))
             }
             
             songs.append(contentsOf: newSongs)
@@ -77,12 +79,13 @@ class PlayerManager: NSObject, ObservableObject, AVAudioPlayerDelegate {
         }
     }
     
-    func loadMetadata(_ url: URL) async -> (title: String, artist: String) {
+    func loadMetadata(_ url: URL) async -> (title: String, artist: String, coverArt: Data?) {
         let asset = AVURLAsset(url: url)
         let metadata = try? await asset.load(.commonMetadata)
         
         var title = url.deletingPathExtension().lastPathComponent
         var artist = "Unknown Artist"
+        var coverArt: Data?
     
         for item in metadata ?? [] {
             if item.commonKey == .commonKeyTitle,
@@ -93,9 +96,13 @@ class PlayerManager: NSObject, ObservableObject, AVAudioPlayerDelegate {
                let value = try? await item.load(.stringValue) {
                 artist = value
             }
+            if item.commonKey == .commonKeyArtwork,
+               let data = try? await item.load(.dataValue) {
+                coverArt = data
+            }
         }
         
-        return (title, artist)
+        return (title, artist, coverArt)
     }
     
     func saveLibrary() {
