@@ -18,7 +18,9 @@ struct PlayerView: View {
                 Color.black.ignoresSafeArea()
             }
 
-            VStack(spacing: 20) {
+            VStack(spacing: 28) {
+                Spacer()
+
                 AlbumArt(coverData: player.coverArtData,
                          size: CGSize(width: 260, height: 260))
 
@@ -50,6 +52,7 @@ struct PlayerView: View {
                         }
                     }
                     .tint(.purple)
+                    .frame(width: 320)
                 }
 
                 HStack(spacing: 48) {
@@ -67,8 +70,11 @@ struct PlayerView: View {
                     }
                 }
                 .foregroundStyle(.white)
+
+                Spacer()
             }
             .padding(.horizontal)
+            .padding(.bottom, 60)
         }
     }
 }
