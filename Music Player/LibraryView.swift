@@ -5,14 +5,23 @@ struct LibraryView: View {
     @EnvironmentObject var player: PlayerManager
     @State var showPlayer = false
     @State var showImporter = false
+    @State var searchText: String = ""
+    var filteredSongs: [Song] {
+        guard !searchText.isEmpty else {
+            return player.songs
+        }
+        let q = searchText.lowercased()
+        return player.songs.filter { $0.artist.lowercased().contains(q) || $0.title.lowercased().contains(q)}
+    }
 
     var body: some View {
         ZStack(alignment: .bottom) {
             NavigationStack {
-                List(player.songs.indices, id: \.self) { i in
-                    let song = player.songs[i]
+                List(filteredSongs.indices, id: \.self) { i in
+                    let song = filteredSongs[i]
                     Button {
-                        player.play(i)
+                        guard let index = player.songs.firstIndex(where: { $0.id == filteredSongs[i].id }) else { return }
+                        player.play(index)
                         showPlayer = true
                     } label: {
                         HStack(spacing: 12) {
@@ -21,13 +30,13 @@ struct LibraryView: View {
                             VStack(alignment: .leading, spacing: 2) {
                                 Text(song.title)
                                     .font(.body)
-                                    .foregroundStyle(player.currentIndex == i && player.isPlaying ? .pink : .primary)
+                                    .foregroundStyle(player.currentSong?.id == song.id && player.isPlaying ? .pink : .primary)
                                 Text(song.artist)
                                     .font(.subheadline)
                                     .foregroundStyle(.secondary)
                             }
                             Spacer()
-                            if player.currentIndex == i && player.isPlaying {
+                            if player.currentSong?.id == song.id && player.isPlaying {
                                 Image(systemName: "waveform")
                                     .foregroundStyle(.black)
                                     .symbolEffect(.variableColor)
@@ -37,6 +46,7 @@ struct LibraryView: View {
                     }
                     .buttonStyle(.plain)
                 }
+                .searchable(text: $searchText, prompt: "Search for artists and songs...")
                 .navigationTitle("Library")
                 .toolbar {
                     Button { showImporter = true } label: {
