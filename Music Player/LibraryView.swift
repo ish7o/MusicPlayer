@@ -5,6 +5,7 @@ struct LibraryView: View {
     @EnvironmentObject var player: PlayerManager
     @State var showPlayer = false
     @State var showImporter = false
+    @State var showQueue = false
     @State var searchText: String = ""
     var filteredSongs: [Song] {
         guard !searchText.isEmpty else {
@@ -45,12 +46,23 @@ struct LibraryView: View {
                         .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
+                    .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                        Button {
+                            player.addToQueue(song)
+                        } label: {
+                            Label("Queue", systemImage: "text.line.first.and.arrowtriangle.forward")
+                        }
+                        .tint(.accentColor)
+                    }
                 }
                 .searchable(text: $searchText, prompt: "Search for artists and songs...")
                 .navigationTitle("Library")
                 .toolbar {
                     Button { showImporter = true } label: {
                         Image(systemName: "plus")
+                    }
+                    Button { showQueue = true } label: {
+                        Image(systemName: "list.number")
                     }
                     Button { Task { await player.scanDocuments() } } label: {
                         Image(systemName: "arrow.clockwise")
@@ -61,6 +73,9 @@ struct LibraryView: View {
             MiniPlayer(showPlayer: $showPlayer).environmentObject(player)
         }.sheet(isPresented: $showPlayer) {
             PlayerView().environmentObject(player)
+        }
+        .sheet(isPresented: $showQueue) {
+            QueueView().environmentObject(player)
         }
         .fileImporter(
             isPresented: $showImporter,

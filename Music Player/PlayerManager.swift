@@ -12,6 +12,7 @@ class PlayerManager: NSObject, ObservableObject, AVAudioPlayerDelegate {
     @Published var songs: [Song] = [] {
         didSet { saveLibrary() }
     }
+    @Published var queue: [Song] = []
 
     private var player: AVAudioPlayer?
     private var timer: Timer?
@@ -180,8 +181,18 @@ class PlayerManager: NSObject, ObservableObject, AVAudioPlayerDelegate {
     }
 
     func next() {
-        guard !songs.isEmpty else { return }
-        play((currentIndex + 1) % songs.count)
+        if !queue.isEmpty {
+            let nextSong = queue.removeFirst()
+            if let index = songs.firstIndex(where: { $0.id == nextSong.id }) {
+                play(index)
+            }
+        } else if !songs.isEmpty {
+            play((currentIndex + 1) % songs.count)
+        }
+    }
+    
+    func addToQueue(_ song: Song) {
+        queue.append(song)
     }
 
     func previous() {
