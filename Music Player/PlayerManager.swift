@@ -67,9 +67,13 @@ class PlayerManager: NSObject, ObservableObject, AVAudioPlayerDelegate {
                 !existingFilenames.contains(url.lastPathComponent)
             }
             
+            print("Found \(newAudioFiles.count) new audio files on disk")
+            
             var newSongs: [Song] = []
             for url in newAudioFiles {
+                print("Processing file: \(url.lastPathComponent)")
                 let metadata = await loadMetadata(url)
+                print("Metadata: title=\(metadata.title), artist=\(metadata.artist), coverArt=\(metadata.coverArt?.count ?? 0) bytes")
                 newSongs.append(Song(id: UUID(), title: metadata.title, artist: metadata.artist, filename: url.lastPathComponent, coverArt: metadata.coverArt))
             }
             
@@ -91,8 +95,10 @@ class PlayerManager: NSObject, ObservableObject, AVAudioPlayerDelegate {
             
             if FileManager.default.fileExists(atPath: dest.path) { return }
             try FileManager.default.copyItem(at: url, to: dest)
+            print("Imported file to: \(dest.path)")
             
             let metadata = await loadMetadata(dest)
+            print("Imported metadata: title=\(metadata.title), artist=\(metadata.artist), coverArt=\(metadata.coverArt?.count ?? 0) bytes")
             songs.append(Song(id: UUID(), title: metadata.title, artist: metadata.artist, filename: filename, coverArt: metadata.coverArt))
         } catch {
             print("Error importing file: \(error)")
@@ -101,24 +107,34 @@ class PlayerManager: NSObject, ObservableObject, AVAudioPlayerDelegate {
     
     func loadMetadata(_ url: URL) async -> (title: String, artist: String, coverArt: Data?) {
         let asset = AVURLAsset(url: url)
-        let metadata = try? await asset.load(.commonMetadata)
         
         var title = url.deletingPathExtension().lastPathComponent
         var artist = "Unknown Artist"
         var coverArt: Data?
-    
-        for item in metadata ?? [] {
-            if item.commonKey == .commonKeyTitle,
-               let value = try? await item.load(.stringValue) {
-                title = value
-            }
-            if item.commonKey == .commonKeyArtist,
-               let value = try? await item.load(.stringValue) {
-                artist = value
-            }
-            if item.commonKey == .commonKeyArtwork,
-               let data = try? await item.load(.dataValue) {
-                coverArt = data
+        
+        for format in (try? await asset.load(.availableMetadataFormats)) ?? [] {
+            let metadata = try? await asset.loadMetadata(for: format)
+            for item in metadata ?? [] {
+                if item.commonKey == .commonKeyTitle,
+                   let value = try? await item.load(.stringValue) {
+                    title = value
+                }
+                if item.commonKey == .commonKeyArtist,
+                   let value = try? await item.load(.stringValue) {
+                    artist = value
+                }
+                if item.commonKey == .commonKeyArtwork {
+                    if let data = try? await item.load(.dataValue) {
+                        coverArt = data
+                        print("Artwork found via dataValue, size: \(data.count) bytes")
+                    } else if let dict = try? await item.load(.value) as? [String: Any],
+                              let data = dict["data"] as? Data {
+                        coverArt = data
+                        print("Artwork found via dict, size: \(data.count) bytes")
+                    } else {
+                        print("Artwork item found but couldn't extract data: \(String(describing: item.value))")
+                    }
+                }
             }
         }
         
