@@ -18,6 +18,13 @@ struct LibraryView: View {
     var body: some View {
         ZStack(alignment: .bottom) {
             NavigationStack {
+                if player.songs.isEmpty {
+                    ContentUnavailableView(
+                        "No Music Yet",
+                        systemImage: "music.note.list",
+                        description: Text("Tap + to import songs from Files, or refresh to scan.")
+                    )
+                }
                 List(filteredSongs.indices, id: \.self) { i in
                     let song = filteredSongs[i]
                     Button {
@@ -27,11 +34,12 @@ struct LibraryView: View {
                     } label: {
                         HStack(spacing: 12) {
                             AlbumArt(coverData: song.coverArt,
-                                     size: CGSize(width: 40, height: 40))
+                                     size: CGSize(width: 44, height: 44))
                             VStack(alignment: .leading, spacing: 2) {
                                 Text(song.title)
                                     .font(.body)
-                                    .foregroundStyle(player.currentSong?.id == song.id && player.isPlaying ? .pink : .primary)
+                                    .fontWeight(player.currentSong?.id == song.id && player.isPlaying ? .semibold : .regular)
+                                    .foregroundStyle(player.currentSong?.id == song.id && player.isPlaying ? .purple : .primary)
                                 Text(song.artist)
                                     .font(.subheadline)
                                     .foregroundStyle(.secondary)
@@ -39,7 +47,7 @@ struct LibraryView: View {
                             Spacer()
                             if player.currentSong?.id == song.id && player.isPlaying {
                                 Image(systemName: "waveform")
-                                    .foregroundStyle(.black)
+                                    .foregroundStyle(.purple)
                                     .symbolEffect(.variableColor)
                             }
                         }
@@ -50,22 +58,26 @@ struct LibraryView: View {
                         Button {
                             player.addToQueue(song)
                         } label: {
-                            Label("Queue", systemImage: "text.line.first.and.arrowtriangle.forward")
+                            Label("Queue", systemImage: "forward.fill")
                         }
-                        .tint(.accentColor)
+                        .tint(.purple)
                     }
                 }
-                .searchable(text: $searchText, prompt: "Search for artists and songs...")
+                .searchable(text: $searchText, prompt: "Search songs or artists...")
                 .navigationTitle("Library")
                 .toolbar {
-                    Button { showImporter = true } label: {
-                        Image(systemName: "plus")
-                    }
-                    Button { showQueue = true } label: {
-                        Image(systemName: "list.number")
-                    }
-                    Button { Task { await player.scanDocuments() } } label: {
-                        Image(systemName: "arrow.clockwise")
+                    ToolbarItem(placement: .topBarTrailing) {
+                        HStack(spacing: 2) {
+                            Button { showImporter = true } label: {
+                                Image(systemName: "plus")
+                            }
+                            Button { showQueue = true } label: {
+                                Image(systemName: "line.3.horizontal")
+                            }
+                            Button { Task { await player.scanDocuments() } } label: {
+                                Image(systemName: "arrow.clockwise")
+                            }
+                        }
                     }
                 }
             }

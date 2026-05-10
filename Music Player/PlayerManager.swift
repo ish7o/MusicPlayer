@@ -2,7 +2,7 @@ import AVFoundation
 import Combine
 
 class PlayerManager: NSObject, ObservableObject, AVAudioPlayerDelegate {
-    @Published var currentIndex: Int = 0
+    @Published var currentIndex: Int = -1
     @Published var isPlaying: Bool = false
     @Published var progress: Double = 0
     @Published var currentTime: String = "0:00"
@@ -30,7 +30,10 @@ class PlayerManager: NSObject, ObservableObject, AVAudioPlayerDelegate {
         }
     }
 
-    var currentSong: Song? { songs.isEmpty ? nil : songs[currentIndex] }
+    var currentSong: Song? {
+        guard currentIndex >= 0, currentIndex < songs.count else { return nil }
+        return songs[currentIndex]
+    }
     
     private func formatTime(_ seconds: Double) -> String {
         guard !seconds.isNaN else { return "0:00" }
@@ -58,10 +61,11 @@ class PlayerManager: NSObject, ObservableObject, AVAudioPlayerDelegate {
             let files = try FileManager.default.contentsOfDirectory(at: docs, includingPropertiesForKeys: nil)
             let onDiskFilenames = Set(files.map { $0.lastPathComponent })
             
-            songs = songs.filter { song in
-                let exists = onDiskFilenames.contains(song.filename)
-                if !exists && currentIndex >= songs.count { currentIndex = 0 }
-                return exists
+            let removed = songs.filter { !onDiskFilenames.contains($0.filename) }
+            songs.removeAll { !onDiskFilenames.contains($0.filename) }
+            if removed.contains(where: { $0.id == currentSong?.id }) {
+                currentIndex = -1
+                coverArtData = nil
             }
             
             let existingFilenames = Set(songs.map { $0.filename })
@@ -214,6 +218,8 @@ class PlayerManager: NSObject, ObservableObject, AVAudioPlayerDelegate {
 
     func previous() {
         guard !songs.isEmpty else { return }
+        
+        if currentIndex < 0 { play(songs.count - 1); return }
         
         if !queueSpent.isEmpty {
             let lastSpent = queueSpent.removeLast()

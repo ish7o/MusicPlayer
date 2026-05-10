@@ -6,7 +6,9 @@ struct AlbumArt: View {
     
     var body: some View {
         RoundedRectangle(cornerRadius: size.width * 0.08)
-            .fill(Color.black.gradient)
+            .fill(
+                LinearGradient(colors: [.purple, .black], startPoint: .topLeading, endPoint: .bottomTrailing)
+            )
             .frame(width: size.width, height: size.height)
             .overlay {
                 if let coverData, let uiImage = UIImage(data: coverData) {
@@ -18,7 +20,7 @@ struct AlbumArt: View {
                 } else {
                     Image(systemName: "music.note")
                         .font(.system(size: size.width * 0.32))
-                        .foregroundStyle(.white)
+                        .foregroundStyle(.white.opacity(0.7))
                 }
             }
     }

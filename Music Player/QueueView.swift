@@ -10,8 +10,8 @@ struct QueueView: View {
                 if player.queue.isEmpty && !player.repeatQueue {
                     ContentUnavailableView(
                         "Queue is empty",
-                        systemImage: "text.line.first.and.arrowtriangle.forward",
-                        description: Text("Swipe right on a song to add it to the queue.")
+                        systemImage: "forward.fill",
+                        description: Text("Swipe left on a song to add it.")
                     )
                 }
                 ForEach(player.queue) { song in
@@ -38,7 +38,7 @@ struct QueueView: View {
                             player.toggleQueueRepeat()
                         } label: {
                             Image(systemName: player.repeatQueue ? "repeat" : "repeat")
-                                .foregroundStyle(player.repeatQueue ? .accentColor : .gray)
+                                .foregroundStyle(player.repeatQueue ? .purple : .gray)
                         }
                         Button("Clear") { player.queue.removeAll() }
                     }
