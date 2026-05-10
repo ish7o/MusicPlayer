@@ -79,6 +79,26 @@ class PlayerManager: NSObject, ObservableObject, AVAudioPlayerDelegate {
         }
     }
     
+    @MainActor
+    func importFile(_ url: URL) async {
+        do {
+            guard url.startAccessingSecurityScopedResource() else { return }
+            defer { url.stopAccessingSecurityScopedResource() }
+            
+            let docs = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+            let filename = url.lastPathComponent
+            let dest = docs.appendingPathComponent(filename)
+            
+            if FileManager.default.fileExists(atPath: dest.path) { return }
+            try FileManager.default.copyItem(at: url, to: dest)
+            
+            let metadata = await loadMetadata(dest)
+            songs.append(Song(id: UUID(), title: metadata.title, artist: metadata.artist, filename: filename, coverArt: metadata.coverArt))
+        } catch {
+            print("Error importing file: \(error)")
+        }
+    }
+    
     func loadMetadata(_ url: URL) async -> (title: String, artist: String, coverArt: Data?) {
         let asset = AVURLAsset(url: url)
         let metadata = try? await asset.load(.commonMetadata)
